@@ -28,7 +28,7 @@ This is a Flask-based API designed for managing Dynamic DNS (DDNS) keys and asso
 3. Run the application:
 
     ```bash
-    python main.py
+    python app.py
     ```
 
    By default, the app will run on `http://127.0.0.1:5000`.
