@@ -1,52 +1,14 @@
 from flask import Flask, request, jsonify  # type: ignore
-import json
-import os
 import uuid
-from pathlib import Path
 
-BASE_DIR = Path(__file__).resolve().parent  # Define the base directory
-
-# Create the Flask application
+# Initialize the Flask application
 app = Flask(__name__)
 
 # Admin key for managing the system
+ADMIN_KEY = '35c1dbca-c958-4dad-9f7d-a9fba8aa79e5'
 
-ADMIN_KEY = os.getenv('ADMIN_KEY', '35c1dbca-c958-4dad-9f7d-a9fba8aa79e5')
-
-
-# Path to the JSON data file
-data_file = BASE_DIR / "data.json"
-
-# Check if the file exists and initialize it with an empty list if necessary
-if not data_file.exists():  # If the file does not exist
-    with open(data_file, "w") as f:
-        json.dump([], f)  # Write an empty list to the file
-else:  # If the file exists
-    with open(data_file, "r") as f:
-        try:
-            data = json.load(f)  # Attempt to load the data from the file
-            if not data:  # If the data is empty
-                data = []
-                with open(data_file, "w") as f:
-                    json.dump(data, f)  # Write an empty list to the file
-        except json.JSONDecodeError:  # If there is an error parsing the file as JSON
-            with open(data_file, "w") as f:
-                json.dump([], f)  # Write an empty list to the file
-
-# Load the data from the JSON file
-def load_data():
-    """Load the data from the data file."""
-    try:
-        with open(data_file, "r") as f:
-            return json.load(f)
-    except FileNotFoundError:
-        return []  # Return an empty list if the file is not found
-
-# Save the provided data to the JSON file
-def save_data(data):
-    """Save the provided data to the data file."""
-    with open(data_file, "w") as f:
-        json.dump(data, f, indent=4)  # Write data to the file with indentation
+# In-memory data store (instead of using a file)
+data = []
 
 # Endpoint to create a new key
 @app.route("/create_key/<admin_key>", methods=["GET"])
@@ -63,9 +25,7 @@ def create_key(admin_key):
 
     # Generate a new UUID and add it to the data
     new_key = str(uuid.uuid4())
-    data = load_data()
     data.append({"key": new_key, "ip": None})  # Add the new key with no IP address
-    save_data(data)  # Save the updated data
 
     return jsonify({"key": new_key}), 201  # Return the new key in the response
 
@@ -82,8 +42,7 @@ def list_key(admin_key):
     if admin_key != ADMIN_KEY:
         return jsonify({"error": "Unauthorized"}), 403  # Return error if the admin key is incorrect
 
-    # Retrieve and return the list of keys
-    data = load_data()
+    # Return the list of keys
     keys = [{"key": entry["key"], "ip": entry["ip"]} for entry in data]
 
     return jsonify(keys), 200  # Return the list of keys
@@ -108,9 +67,8 @@ def remove_key(admin_key):
         return jsonify({"error": "Key is required"}), 400  # Return error if the key is not provided
 
     # Remove the key from the data
-    data = load_data()
+    global data
     data = [entry for entry in data if entry["key"] != key_to_remove]
-    save_data(data)  # Save the updated data
 
     return jsonify({"message": f"Key {key_to_remove} removed"}), 200  # Confirm the removal
 
@@ -124,7 +82,6 @@ def add_ip(key):
     Returns:
         JSON response with the updated key or an error message.
     """
-    data = load_data()
     ip = request.json.get("ip")
     if not ip:
         return jsonify({"error": "IP is required"}), 400  # Return error if the IP is not provided
@@ -133,7 +90,6 @@ def add_ip(key):
     for entry in data:
         if entry["key"] == key:
             entry["ip"] = ip
-            save_data(data)  # Save the updated data
             return jsonify(entry), 200  # Return the updated key
 
     return jsonify({"error": "Key not found"}), 404  # Return error if the key is not found
@@ -148,7 +104,6 @@ def get_ip(key):
     Returns:
         JSON response with the key and its IP or an error message.
     """
-    data = load_data()
     for entry in data:
         if entry["key"] == key:
             return jsonify(entry), 200  # Return the key and its IP
@@ -157,4 +112,4 @@ def get_ip(key):
 
 # Main entry point for the Flask application
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=80, debug=False)  # Run the app in debug mode
+    app.run(host="0.0.0.0", port=80, debug=False)  # Run 
