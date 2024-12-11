@@ -20,8 +20,7 @@ def get_wan_ip():
         str: The public IP address of the client.
     """
     # Attempt to get the user's IP address from the request headers or fallback to the remote address
-    user_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
-    
+    user_ip = request.headers.get('X-Forwarded-For', request.remote_addr).split(',')[0].strip()
     # Return the IP address as a plain text response
     return user_ip
 
