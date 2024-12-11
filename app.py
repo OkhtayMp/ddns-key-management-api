@@ -10,6 +10,21 @@ ADMIN_KEY = '35c1dbca-c958-4dad-9f7d-a9fba8aa79e5'
 # In-memory data store (instead of using a file)
 data = []
 
+@app.route("/ip/", methods=["GET"])
+def get_wan_ip():
+    """
+    This route returns the public IP address of the client
+    by extracting it from the request's headers (X-Forwarded-For or remote address).
+    
+    Returns:
+        str: The public IP address of the client.
+    """
+    # Attempt to get the user's IP address from the request headers or fallback to the remote address
+    user_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+    
+    # Return the IP address as a plain text response
+    return user_ip
+
 # Endpoint to create a new key
 @app.route("/create_key/<admin_key>", methods=["GET"])
 def create_key(admin_key):
